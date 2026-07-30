@@ -4,7 +4,7 @@ import '../../domain/repositories/trade_repository.dart';
 import 'firebase_trade_repository.dart';
 import 'trade_repository_impl.dart';
 
-/// Repositorio Híbrido que sincroniza operaciones en almacenamiento local y Firebase Firestore.
+/// Repositorio Híbrido que filtra las operaciones locales y en Firebase por usuario.
 class HybridTradeRepository implements TradeRepository {
   final TradeRepositoryImpl localRepository;
   final FirebaseTradeRepository firebaseRepository;
@@ -18,12 +18,13 @@ class HybridTradeRepository implements TradeRepository {
         firebaseRepository = firebaseRepository ?? FirebaseTradeRepository();
 
   @override
-  Future<List<Trade>> getTrades() async {
-    final localTrades = await localRepository.getTrades();
+  Future<List<Trade>> getTrades({String? userId}) async {
+    final targetUserId = userId ?? 'admin';
+    final localTrades = await localRepository.getTrades(userId: targetUserId);
 
     if (useFirebase) {
       try {
-        final remoteTrades = await firebaseRepository.getTrades();
+        final remoteTrades = await firebaseRepository.getTrades(userId: targetUserId);
         if (remoteTrades.isNotEmpty) {
           final Map<int, Trade> tradeMap = {};
           for (final t in localTrades) {
@@ -37,7 +38,7 @@ class HybridTradeRepository implements TradeRepository {
           return merged;
         }
       } catch (e) {
-        debugPrint('⚠️ Firebase no disponible o sin conexión. Usando almacenamiento local: $e');
+        debugPrint('⚠️ Firebase no disponible. Usando datos locales para $targetUserId: $e');
       }
     }
 
@@ -53,7 +54,7 @@ class HybridTradeRepository implements TradeRepository {
       try {
         await firebaseRepository.addTrade(tradeWithId);
       } catch (e) {
-        debugPrint('⚠️ No se pudo guardar en Firebase. Guardado localmente: $e');
+        debugPrint('⚠️ No se pudo guardar en Firebase: $e');
       }
     }
     return localId;
@@ -67,7 +68,7 @@ class HybridTradeRepository implements TradeRepository {
       try {
         await firebaseRepository.updateTrade(trade);
       } catch (e) {
-        debugPrint('⚠️ No se pudo actualizar en Firebase. Actualizado localmente: $e');
+        debugPrint('⚠️ No se pudo actualizar en Firebase: $e');
       }
     }
     return result;
@@ -81,7 +82,7 @@ class HybridTradeRepository implements TradeRepository {
       try {
         await firebaseRepository.deleteTrade(id);
       } catch (e) {
-        debugPrint('⚠️ No se pudo eliminar de Firebase. Eliminado localmente: $e');
+        debugPrint('⚠️ No se pudo eliminar de Firebase: $e');
       }
     }
     return result;

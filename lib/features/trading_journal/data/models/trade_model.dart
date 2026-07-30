@@ -1,10 +1,11 @@
 import '../../domain/entities/trade.dart';
 
 /// Modelo de datos que hereda de la entidad [Trade] y añade serialización/deserialización
-/// para interactuar con SQLite (conversión Map <-> Objeto).
+/// para interactuar con SQLite y Firestore.
 class TradeModel extends Trade {
   const TradeModel({
     super.id,
+    super.userId,
     required super.asset,
     required super.strategy,
     required super.entryDate,
@@ -15,10 +16,11 @@ class TradeModel extends Trade {
     super.imageUrl,
   });
 
-  /// Convierte un Map proveniente de la BD SQLite a una instancia de [TradeModel].
+  /// Convierte un Map proveniente de la BD a una instancia de [TradeModel].
   factory TradeModel.fromMap(Map<String, dynamic> map) {
     return TradeModel(
       id: map['id'] as int?,
+      userId: map['user_id']?.toString(),
       asset: map['asset'] as String,
       strategy: map['strategy'] as String,
       entryDate: DateTime.parse(map['entry_date'] as String),
@@ -36,7 +38,7 @@ class TradeModel extends Trade {
     );
   }
 
-  /// Convierte la instancia de [TradeModel] a un Map compatible con SQLite.
+  /// Convierte la instancia de [TradeModel] a un Map compatible con SQLite y Firestore.
   Map<String, dynamic> toMap() {
     final map = <String, dynamic>{
       'asset': asset,
@@ -47,6 +49,7 @@ class TradeModel extends Trade {
       'session': session.name,
       'notes': notes,
       'image_url': imageUrl,
+      'user_id': userId,
     };
 
     if (id != null) {
@@ -60,6 +63,7 @@ class TradeModel extends Trade {
   factory TradeModel.fromEntity(Trade trade) {
     return TradeModel(
       id: trade.id,
+      userId: trade.userId,
       asset: trade.asset,
       strategy: trade.strategy,
       entryDate: trade.entryDate,

@@ -3,16 +3,18 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'firebase_options.dart';
 import 'core/theme/app_theme.dart';
+import 'features/auth/data/repositories/auth_repository_impl.dart';
+import 'features/auth/presentation/cubit/auth_cubit.dart';
+import 'features/auth/presentation/cubit/auth_state.dart';
+import 'features/auth/presentation/screens/login_screen.dart';
 import 'features/trading_journal/data/repositories/hybrid_trade_repository.dart';
 import 'features/trading_journal/domain/repositories/trade_repository.dart';
 import 'features/trading_journal/presentation/cubit/trade_cubit.dart';
 import 'features/trading_journal/presentation/screens/main_screen.dart';
 
 void main() async {
-  // Asegura la inicialización de bindings para sqflite, firebase y plugins nativos
   WidgetsFlutterBinding.ensureInitialized();
 
-  // Inicialización de Firebase
   try {
     await Firebase.initializeApp(
       options: DefaultFirebaseOptions.currentPlatform,
@@ -22,29 +24,59 @@ void main() async {
     debugPrint('⚠️ Notificación Firebase init: $e');
   }
 
-  // Inicialización del repositorio (Firebase Firestore + SQLite local)
   final TradeRepository tradeRepository = HybridTradeRepository();
+  final authRepository = AuthRepositoryImpl();
 
-  runApp(TradingJournalApp(tradeRepository: tradeRepository));
+  runApp(TradingJournalApp(
+    tradeRepository: tradeRepository,
+    authRepository: authRepository,
+  ));
 }
 
 class TradingJournalApp extends StatelessWidget {
   final TradeRepository tradeRepository;
+  final AuthRepositoryImpl authRepository;
 
   const TradingJournalApp({
     super.key,
     required this.tradeRepository,
+    required this.authRepository,
   });
 
   @override
   Widget build(BuildContext context) {
-    return BlocProvider(
-      create: (context) => TradeCubit(repository: tradeRepository)..loadTrades(),
+    return MultiBlocProvider(
+      providers: [
+        BlocProvider(
+          create: (context) => AuthCubit(authRepository: authRepository)..checkAuthStatus(),
+        ),
+        BlocProvider(
+          create: (context) => TradeCubit(repository: tradeRepository),
+        ),
+      ],
       child: MaterialApp(
         title: 'Trading Journal',
         debugShowCheckedModeBanner: false,
         theme: AppTheme.darkTheme,
-        home: const MainScreen(),
+        home: BlocBuilder<AuthCubit, AuthState>(
+          builder: (context, state) {
+            if (state is Authenticated) {
+              // Asignar el usuario activo al TradeCubit para filtrar únicamente sus datos
+              context.read<TradeCubit>().setUserId(state.user.username);
+              return const MainScreen();
+            }
+
+            if (state is Unauthenticated || state is AuthError) {
+              return const LoginScreen();
+            }
+
+            return const Scaffold(
+              body: Center(
+                child: CircularProgressIndicator(color: AppTheme.primaryColor),
+              ),
+            );
+          },
+        ),
       ),
     );
   }

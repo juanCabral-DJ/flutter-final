@@ -3,7 +3,7 @@ import '../../domain/entities/trade.dart';
 import '../../domain/repositories/trade_repository.dart';
 import '../models/trade_model.dart';
 
-/// Implementación concreta del [TradeRepository] que utiliza [DatabaseHelper] (sqflite).
+/// Implementación concreta de [TradeRepository] que utiliza [DatabaseHelper] con filtrado por usuario.
 class TradeRepositoryImpl implements TradeRepository {
   final DatabaseHelper dbHelper;
 
@@ -11,8 +11,9 @@ class TradeRepositoryImpl implements TradeRepository {
       : dbHelper = dbHelper ?? DatabaseHelper.instance;
 
   @override
-  Future<List<Trade>> getTrades() async {
-    final List<Map<String, dynamic>> maps = await dbHelper.getTrades();
+  Future<List<Trade>> getTrades({String? userId}) async {
+    final targetUserId = userId ?? 'admin';
+    final List<Map<String, dynamic>> maps = await dbHelper.getTradesByUser(targetUserId);
     return maps.map((map) => TradeModel.fromMap(map)).toList();
   }
 

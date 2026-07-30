@@ -4,7 +4,7 @@ import '../../domain/entities/trade.dart';
 import '../../domain/repositories/trade_repository.dart';
 import '../models/trade_model.dart';
 
-/// Implementación concreta de [TradeRepository] para persistencia en Firebase Cloud Firestore.
+/// Implementación concreta de [TradeRepository] para Firebase Cloud Firestore con aislamiento por usuario.
 class FirebaseTradeRepository implements TradeRepository {
   final FirebaseFirestore _firestore;
   static const String _collectionName = 'trades';
@@ -16,22 +16,26 @@ class FirebaseTradeRepository implements TradeRepository {
       _firestore.collection(_collectionName);
 
   @override
-  Future<List<Trade>> getTrades() async {
+  Future<List<Trade>> getTrades({String? userId}) async {
     try {
+      final targetUserId = userId ?? 'admin';
       final snapshot = await _tradesCollection
-          .orderBy('entry_date', descending: true)
+          .where('user_id', isEqualTo: targetUserId)
           .get()
           .timeout(const Duration(seconds: 4));
 
-      return snapshot.docs.map((doc) {
+      final trades = snapshot.docs.map((doc) {
         final data = doc.data();
         if (!data.containsKey('id') || data['id'] == null) {
           data['id'] = int.tryParse(doc.id) ?? doc.id.hashCode;
         }
         return TradeModel.fromMap(data);
       }).toList();
+
+      trades.sort((a, b) => b.entryDate.compareTo(a.entryDate));
+      return trades;
     } catch (e) {
-      debugPrint('Error al obtener trades de Firebase: $e');
+      debugPrint('Error al obtener trades de Firebase para el usuario: $e');
       rethrow;
     }
   }
@@ -79,21 +83,5 @@ class FirebaseTradeRepository implements TradeRepository {
       debugPrint('Error al eliminar trade en Firebase: $e');
       rethrow;
     }
-  }
-
-  /// Transmite la lista de trades en tiempo real desde Firebase Firestore.
-  Stream<List<Trade>> watchTrades() {
-    return _tradesCollection
-        .orderBy('entry_date', descending: true)
-        .snapshots()
-        .map((snapshot) {
-      return snapshot.docs.map((doc) {
-        final data = doc.data();
-        if (!data.containsKey('id') || data['id'] == null) {
-          data['id'] = int.tryParse(doc.id) ?? doc.id.hashCode;
-        }
-        return TradeModel.fromMap(data);
-      }).toList();
-    });
   }
 }

@@ -6,7 +6,6 @@ enum TradeOutcome {
   won,
   lost;
 
-  /// Retorna un texto descriptivo para la UI
   String get label {
     switch (this) {
       case TradeOutcome.pending:
@@ -54,9 +53,9 @@ enum TradingSession {
 }
 
 /// Entidad pura de Dominio que representa una operación (Trade).
-/// Extiende de Equatable para permitir comparaciones de valor en los estados de BLoC/Cubit.
 class Trade extends Equatable {
   final int? id;
+  final String? userId;
   final String asset;
   final String strategy;
   final DateTime entryDate;
@@ -68,6 +67,7 @@ class Trade extends Equatable {
 
   const Trade({
     this.id,
+    this.userId,
     required this.asset,
     required this.strategy,
     required this.entryDate,
@@ -78,9 +78,10 @@ class Trade extends Equatable {
     this.imageUrl,
   });
 
-  /// Permite crear una copia modificada del Trade (útil para edición)
+  /// Permite crear una copia modificada del Trade (útil para edición y asignación de usuario)
   Trade copyWith({
     int? id,
+    String? userId,
     String? asset,
     String? strategy,
     DateTime? entryDate,
@@ -92,6 +93,7 @@ class Trade extends Equatable {
   }) {
     return Trade(
       id: id ?? this.id,
+      userId: userId ?? this.userId,
       asset: asset ?? this.asset,
       strategy: strategy ?? this.strategy,
       entryDate: entryDate ?? this.entryDate,
@@ -106,6 +108,7 @@ class Trade extends Equatable {
   @override
   List<Object?> get props => [
         id,
+        userId,
         asset,
         strategy,
         entryDate,
