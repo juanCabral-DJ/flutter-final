@@ -136,24 +136,26 @@ class _AddEditTradeScreenState extends State<AddEditTradeScreen> {
     );
 
     final cubit = context.read<TradeCubit>();
+    final bool success;
     if (_isEditing) {
-      await cubit.updateTrade(trade);
+      success = await cubit.updateTrade(trade);
     } else {
-      await cubit.addTrade(trade);
+      success = await cubit.addTrade(trade);
     }
 
     if (!mounted) return;
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          _isEditing ? 'Trade actualizado' : 'Nuevo trade registrado',
+    if (success) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            _isEditing ? 'Trade actualizado con éxito' : 'Nuevo trade registrado con éxito',
+          ),
+          backgroundColor: AppTheme.winColor,
         ),
-        backgroundColor: AppTheme.winColor,
-      ),
-    );
-
-    Navigator.of(context).pop();
+      );
+      Navigator.of(context).pop(true);
+    }
   }
 
   @override
