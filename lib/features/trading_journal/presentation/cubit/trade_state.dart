@@ -16,13 +16,16 @@ class TradeInitial extends TradeState {}
 class TradeLoading extends TradeState {}
 
 /// Estado emitido cuando los trades han sido leídos exitosamente de la BD.
+/// Se incluye un timestamp para garantizar que Flutter BLoC re-renderice siempre la UI.
 class TradeLoaded extends TradeState {
   final List<Trade> trades;
+  final DateTime timestamp;
 
-  const TradeLoaded(this.trades);
+  TradeLoaded(this.trades, {DateTime? timestamp})
+      : timestamp = timestamp ?? DateTime.now();
 
   @override
-  List<Object?> get props => [trades];
+  List<Object?> get props => [trades, timestamp];
 }
 
 /// Estado emitido cuando ocurre algún error en las operaciones de BD.
