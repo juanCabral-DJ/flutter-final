@@ -4,7 +4,7 @@ import '../../../../core/theme/app_theme.dart';
 import '../cubit/auth_cubit.dart';
 import '../cubit/auth_state.dart';
 
-/// Pantalla de Autenticación (Login / Registro) con diseño moderno y cifrado.
+/// Pantalla de Autenticación con métodos independientes para Iniciar Sesión y Registrarse.
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
 
@@ -14,10 +14,10 @@ class LoginScreen extends StatefulWidget {
 
 class _LoginScreenState extends State<LoginScreen> {
   final _formKey = GlobalKey<FormState>();
-  final _usernameController = TextEditingController(text: 'admin');
-  final _passwordController = TextEditingController(text: 'admin1234');
-  bool _isRegisterMode = false;
+  final _usernameController = TextEditingController();
+  final _passwordController = TextEditingController();
   bool _obscurePassword = true;
+  bool _isRegisterMode = false;
 
   @override
   void dispose() {
@@ -26,18 +26,20 @@ class _LoginScreenState extends State<LoginScreen> {
     super.dispose();
   }
 
-  void _submit() {
+  /// Método específico para procesar el Inicio de Sesión
+  void _handleLogin() {
     if (!_formKey.currentState!.validate()) return;
-
     final username = _usernameController.text.trim();
     final password = _passwordController.text.trim();
+    context.read<AuthCubit>().login(username, password);
+  }
 
-    final cubit = context.read<AuthCubit>();
-    if (_isRegisterMode) {
-      cubit.register(username, password);
-    } else {
-      cubit.login(username, password);
-    }
+  /// Método específico para procesar el Registro de Usuario
+  void _handleRegister() {
+    if (!_formKey.currentState!.validate()) return;
+    final username = _usernameController.text.trim();
+    final password = _passwordController.text.trim();
+    context.read<AuthCubit>().register(username, password);
   }
 
   @override
@@ -111,43 +113,13 @@ class _LoginScreenState extends State<LoginScreen> {
                           ),
                           const SizedBox(height: 24),
 
-                          // Banner de Usuario Predeterminado
-                          Container(
-                            padding: const EdgeInsets.all(12),
-                            decoration: BoxDecoration(
-                              color: AppTheme.cardColor,
-                              borderRadius: BorderRadius.circular(12),
-                              border: Border.all(
-                                color: AppTheme.primaryColor.withValues(alpha: 0.3),
-                              ),
-                            ),
-                            child: const Row(
-                              children: [
-                                Icon(Icons.info_outline_rounded,
-                                    color: AppTheme.primaryColor, size: 20),
-                                SizedBox(width: 10),
-                                Expanded(
-                                  child: Text(
-                                    'Usuario predeterminado:\nUsername: admin | Password: admin1234',
-                                    style: TextStyle(
-                                      fontSize: 11,
-                                      color: AppTheme.textSecondary,
-                                      fontWeight: FontWeight.w500,
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                          const SizedBox(height: 20),
-
                           // Campo Username
                           TextFormField(
                             controller: _usernameController,
                             decoration: const InputDecoration(
                               labelText: 'Usuario',
                               prefixIcon: Icon(Icons.person_outline_rounded),
-                              hintText: 'admin',
+                              hintText: 'Ingresa tu nombre de usuario',
                             ),
                             validator: (value) {
                               if (value == null || value.trim().isEmpty) {
@@ -190,58 +162,109 @@ class _LoginScreenState extends State<LoginScreen> {
                           ),
                           const SizedBox(height: 28),
 
-                          // Botón Submit
-                          SizedBox(
-                            width: double.infinity,
-                            height: 50,
-                            child: ElevatedButton(
-                              onPressed: isLoading ? null : _submit,
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: AppTheme.primaryColor,
-                                foregroundColor: Colors.white,
+                          // Botón principal de Iniciar Sesión o Registro
+                          if (!_isRegisterMode) ...[
+                            SizedBox(
+                              width: double.infinity,
+                              height: 50,
+                              child: ElevatedButton.icon(
+                                onPressed: isLoading ? null : _handleLogin,
+                                icon: const Icon(Icons.login_rounded),
+                                label: isLoading
+                                    ? const SizedBox(
+                                        height: 22,
+                                        width: 22,
+                                        child: CircularProgressIndicator(
+                                          color: Colors.white,
+                                          strokeWidth: 2.5,
+                                        ),
+                                      )
+                                    : const Text(
+                                        'Iniciar Sesión',
+                                        style: TextStyle(
+                                          fontSize: 16,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: AppTheme.primaryColor,
+                                  foregroundColor: Colors.white,
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                ),
+                              ),
+                            ),
+                            const SizedBox(height: 12),
+                            OutlinedButton.icon(
+                              onPressed: isLoading
+                                  ? null
+                                  : () {
+                                      setState(() {
+                                        _isRegisterMode = true;
+                                      });
+                                    },
+                              icon: const Icon(Icons.person_add_alt_1_rounded),
+                              label: const Text('Crear Nueva Cuenta'),
+                              style: OutlinedButton.styleFrom(
+                                minimumSize: const Size(double.infinity, 48),
+                                side: const BorderSide(color: AppTheme.primaryColor),
+                                foregroundColor: AppTheme.primaryColor,
                                 shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(12),
                                 ),
                               ),
-                              child: isLoading
-                                  ? const SizedBox(
-                                      height: 24,
-                                      width: 24,
-                                      child: CircularProgressIndicator(
-                                        color: Colors.white,
-                                        strokeWidth: 2.5,
-                                      ),
-                                    )
-                                  : Text(
-                                      _isRegisterMode
-                                          ? 'Registrar Usuario'
-                                          : 'Iniciar Sesión',
-                                      style: const TextStyle(
-                                        fontSize: 16,
-                                        fontWeight: FontWeight.bold,
-                                      ),
-                                    ),
                             ),
-                          ),
-                          const SizedBox(height: 16),
-
-                          // Alternar entre Login y Registro
-                          TextButton(
-                            onPressed: () {
-                              setState(() {
-                                _isRegisterMode = !_isRegisterMode;
-                              });
-                            },
-                            child: Text(
-                              _isRegisterMode
-                                  ? '¿Ya tienes una cuenta? Inicia sesión'
-                                  : '¿No tienes cuenta? Regístrate aquí',
-                              style: const TextStyle(
-                                color: AppTheme.primaryColor,
-                                fontWeight: FontWeight.w600,
+                          ] else ...[
+                            SizedBox(
+                              width: double.infinity,
+                              height: 50,
+                              child: ElevatedButton.icon(
+                                onPressed: isLoading ? null : _handleRegister,
+                                icon: const Icon(Icons.how_to_reg_rounded),
+                                label: isLoading
+                                    ? const SizedBox(
+                                        height: 22,
+                                        width: 22,
+                                        child: CircularProgressIndicator(
+                                          color: Colors.white,
+                                          strokeWidth: 2.5,
+                                        ),
+                                      )
+                                    : const Text(
+                                        'Registrar Usuario',
+                                        style: TextStyle(
+                                          fontSize: 16,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: AppTheme.winColor,
+                                  foregroundColor: Colors.white,
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                ),
                               ),
                             ),
-                          ),
+                            const SizedBox(height: 12),
+                            TextButton(
+                              onPressed: isLoading
+                                  ? null
+                                  : () {
+                                      setState(() {
+                                        _isRegisterMode = false;
+                                      });
+                                    },
+                              child: const Text(
+                                '¿Ya tienes cuenta? Iniciar Sesión',
+                                style: TextStyle(
+                                  color: AppTheme.textSecondary,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ),
+                          ],
                         ],
                       ),
                     ),
