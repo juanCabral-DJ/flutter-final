@@ -33,12 +33,12 @@ class DefaultFirebaseOptions {
   }
 
   static const FirebaseOptions web = FirebaseOptions(
-    apiKey: 'AIzaSyDemoKeyForTradingJournalApp12345',
-    appId: '1:123456789012:web:a1b2c3d4e5f67890',
-    messagingSenderId: '123456789012',
-    projectId: 'trading-journal-firebase-app',
-    authDomain: 'trading-journal-firebase-app.firebaseapp.com',
-    storageBucket: 'trading-journal-firebase-app.appspot.com',
+    apiKey: 'AIzaSyBzhNxr4Y1zKpvb6K_nuct2wIzDTsjfzfk',
+    appId: '1:241704654977:web:25b1d94d0f26bf6facd580',
+    messagingSenderId: '241704654977',
+    projectId: 'trade-journal-fcff3',
+    authDomain: 'trade-journal-fcff3.firebaseapp.com',
+    storageBucket: 'trade-journal-fcff3.firebasestorage.app',
   );
 
   static const FirebaseOptions android = FirebaseOptions(
