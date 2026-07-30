@@ -9,12 +9,12 @@ class TradeCubit extends Cubit<TradeState> {
 
   TradeCubit({required this.repository}) : super(TradeInitial());
 
-  /// Carga todas las operaciones almacenadas en la base de datos local.
+  /// Carga todas las operaciones almacenadas en la base de datos.
   Future<void> loadTrades() async {
     emit(TradeLoading());
     try {
       final trades = await repository.getTrades();
-      emit(TradeLoaded(trades));
+      emit(TradeLoaded(List<Trade>.from(trades)));
     } catch (e) {
       emit(TradeError('Error al cargar la lista de trades: ${e.toString()}'));
     }
@@ -22,6 +22,7 @@ class TradeCubit extends Cubit<TradeState> {
 
   /// Agrega un nuevo trade a la BD y recarga la lista.
   Future<void> addTrade(Trade trade) async {
+    emit(TradeLoading());
     try {
       await repository.addTrade(trade);
       await loadTrades();
@@ -32,6 +33,7 @@ class TradeCubit extends Cubit<TradeState> {
 
   /// Actualiza un trade existente en la BD y recarga la lista.
   Future<void> updateTrade(Trade trade) async {
+    emit(TradeLoading());
     try {
       await repository.updateTrade(trade);
       await loadTrades();
@@ -42,6 +44,7 @@ class TradeCubit extends Cubit<TradeState> {
 
   /// Elimina un trade por su ID y recarga la lista.
   Future<void> deleteTrade(int id) async {
+    emit(TradeLoading());
     try {
       await repository.deleteTrade(id);
       await loadTrades();

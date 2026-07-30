@@ -118,7 +118,7 @@ class _AddEditTradeScreenState extends State<AddEditTradeScreen> {
     }
   }
 
-  void _saveForm() {
+  Future<void> _saveForm() async {
     if (!_formKey.currentState!.validate()) return;
 
     final parsedRR = double.tryParse(_riskRewardController.text.trim()) ?? 1.0;
@@ -137,10 +137,12 @@ class _AddEditTradeScreenState extends State<AddEditTradeScreen> {
 
     final cubit = context.read<TradeCubit>();
     if (_isEditing) {
-      cubit.updateTrade(trade);
+      await cubit.updateTrade(trade);
     } else {
-      cubit.addTrade(trade);
+      await cubit.addTrade(trade);
     }
+
+    if (!mounted) return;
 
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(

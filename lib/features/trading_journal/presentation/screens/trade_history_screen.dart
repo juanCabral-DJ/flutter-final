@@ -41,16 +41,18 @@ class TradeHistoryScreen extends StatelessWidget {
               backgroundColor: AppTheme.lossColor,
               foregroundColor: Colors.white,
             ),
-            onPressed: () {
+            onPressed: () async {
               Navigator.pop(dialogContext);
               if (trade.id != null) {
-                context.read<TradeCubit>().deleteTrade(trade.id!);
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text('Trade ${trade.asset} eliminado'),
-                    backgroundColor: AppTheme.cardColor,
-                  ),
-                );
+                await context.read<TradeCubit>().deleteTrade(trade.id!);
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('Trade ${trade.asset} eliminado'),
+                      backgroundColor: AppTheme.cardColor,
+                    ),
+                  );
+                }
               }
             },
             child: const Text('Eliminar'),
