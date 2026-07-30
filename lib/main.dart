@@ -12,8 +12,6 @@ import 'features/trading_journal/domain/repositories/trade_repository.dart';
 import 'features/trading_journal/presentation/cubit/trade_cubit.dart';
 import 'features/trading_journal/presentation/screens/main_screen.dart';
 
-final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
-
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
@@ -58,76 +56,30 @@ class TradingJournalApp extends StatelessWidget {
       ],
       child: MaterialApp(
         title: 'Trading Journal',
-        navigatorKey: navigatorKey,
         debugShowCheckedModeBanner: false,
         theme: AppTheme.darkTheme,
-        onGenerateRoute: (settings) {
-          if (settings.name == '/main') {
-            return MaterialPageRoute(
-              builder: (context) => const AuthGuard(child: MainScreen()),
-            );
-          }
-          if (settings.name == '/login') {
-            return MaterialPageRoute(
-              builder: (context) => const LoginScreen(),
-            );
-          }
-          return null;
-        },
-        home: const RootAuthRouter(),
+        home: BlocBuilder<AuthCubit, AuthState>(
+          builder: (context, state) {
+            if (state is Authenticated) {
+              // Asignar el usuario activo al TradeCubit para filtrar sus datos
+              context.read<TradeCubit>().setUserId(state.user.username);
+              return const MainScreen();
+            }
+
+            if (state is AuthLoading) {
+              return const Scaffold(
+                backgroundColor: AppTheme.backgroundColor,
+                body: Center(
+                  child: CircularProgressIndicator(color: AppTheme.primaryColor),
+                ),
+              );
+            }
+
+            // Si está desautenticado o en estado de error, mostrar pantalla de Login/Registro
+            return const LoginScreen();
+          },
+        ),
       ),
     );
-  }
-}
-
-/// Router principal de autenticación
-class RootAuthRouter extends StatelessWidget {
-  const RootAuthRouter({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return BlocConsumer<AuthCubit, AuthState>(
-      listenWhen: (previous, current) => previous.runtimeType != current.runtimeType,
-      listener: (context, state) {
-        if (state is Authenticated) {
-          context.read<TradeCubit>().setUserId(state.user.username);
-          navigatorKey.currentState?.pushNamedAndRemoveUntil('/main', (route) => false);
-        } else if (state is Unauthenticated) {
-          navigatorKey.currentState?.pushNamedAndRemoveUntil('/login', (route) => false);
-        }
-      },
-      builder: (context, state) {
-        if (state is Authenticated) {
-          context.read<TradeCubit>().setUserId(state.user.username);
-          return const MainScreen();
-        }
-
-        if (state is Unauthenticated || state is AuthError) {
-          return const LoginScreen();
-        }
-
-        return const Scaffold(
-          body: Center(
-            child: CircularProgressIndicator(color: AppTheme.primaryColor),
-          ),
-        );
-      },
-    );
-  }
-}
-
-/// Guarda de protección para la vista principal
-class AuthGuard extends StatelessWidget {
-  final Widget child;
-
-  const AuthGuard({super.key, required this.child});
-
-  @override
-  Widget build(BuildContext context) {
-    final state = context.watch<AuthCubit>().state;
-    if (state is Authenticated) {
-      return child;
-    }
-    return const LoginScreen();
   }
 }
