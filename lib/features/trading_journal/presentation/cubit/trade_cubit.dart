@@ -1,11 +1,10 @@
-import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../domain/entities/trade.dart';
 import '../../domain/repositories/trade_repository.dart';
 import 'trade_state.dart';
 
-/// Cubit de Trades optimizada para tiempo de respuesta < 200ms con actualización optimista e idempotencia.
+/// Cubit de Trades optimizada para deduplicación estricta de elementos y tiempo de respuesta <200ms.
 class TradeCubit extends Cubit<TradeState> {
   final TradeRepository repository;
   String currentUserId = 'admin';
@@ -22,6 +21,19 @@ class TradeCubit extends Cubit<TradeState> {
     loadTrades();
   }
 
+  /// Deduplica la lista de trades por su ID único para evitar elementos repetidos en UI
+  List<Trade> _deduplicate(List<Trade> trades) {
+    final Map<int, Trade> map = {};
+    for (final t in trades) {
+      if (t.id != null) {
+        map[t.id!] = t;
+      }
+    }
+    final list = map.values.toList();
+    list.sort((a, b) => b.entryDate.compareTo(a.entryDate));
+    return list;
+  }
+
   /// Carga inicial de trades de forma limpia.
   Future<void> loadTrades() async {
     if (_isProcessing) return;
@@ -29,7 +41,7 @@ class TradeCubit extends Cubit<TradeState> {
     emit(TradeLoading());
     try {
       final trades = await repository.getTrades(userId: currentUserId);
-      _currentTrades = List<Trade>.from(trades);
+      _currentTrades = _deduplicate(trades);
       emit(TradeLoaded(
         List<Trade>.unmodifiable(_currentTrades),
         timestamp: DateTime.now(),
@@ -42,31 +54,30 @@ class TradeCubit extends Cubit<TradeState> {
     }
   }
 
-  /// Agrega un nuevo trade con tiempo de respuesta < 200ms (optimista) e idempotente.
+  /// Agrega un nuevo trade obteniendo su ID real de base de datos para evitar duplicaciones en pantalla.
   Future<bool> addTrade(Trade trade) async {
-    final int generatedId = trade.id ?? DateTime.now().millisecondsSinceEpoch;
-    final opKey = 'add_$generatedId';
+    final int tempId = trade.id ?? DateTime.now().millisecondsSinceEpoch;
+    final opKey = 'add_$tempId';
 
     if (_activeOperations.contains(opKey)) return false;
     _activeOperations.add(opKey);
 
     try {
-      final tradeWithId = trade.copyWith(id: generatedId, userId: currentUserId);
+      final tradeWithId = trade.copyWith(id: tempId, userId: currentUserId);
 
-      // Actualización optimista instantánea en memoria (0-5 ms)
+      // Persistir de inmediato en repositorio local/híbrido
+      final realId = await repository.addTrade(tradeWithId);
+      final finalTrade = tradeWithId.copyWith(id: realId);
+
       final updatedList = List<Trade>.from(_currentTrades);
-      updatedList.removeWhere((t) => t.id == generatedId);
-      updatedList.insert(0, tradeWithId);
-      updatedList.sort((a, b) => b.entryDate.compareTo(a.entryDate));
+      updatedList.removeWhere((t) => t.id == tempId || t.id == realId);
+      updatedList.insert(0, finalTrade);
 
-      _currentTrades = updatedList;
+      _currentTrades = _deduplicate(updatedList);
       emit(TradeLoaded(
         List<Trade>.unmodifiable(_currentTrades),
         timestamp: DateTime.now(),
       ));
-
-      // Persistir asíncronamente en segundo plano
-      unawaited(repository.addTrade(tradeWithId));
       return true;
     } catch (e) {
       debugPrint('Error en addTrade: $e');
@@ -78,7 +89,7 @@ class TradeCubit extends Cubit<TradeState> {
     }
   }
 
-  /// Actualiza un trade existente con tiempo de respuesta < 200ms e idempotente.
+  /// Actualiza un trade existente sin duplicar registros.
   Future<bool> updateTrade(Trade trade) async {
     if (trade.id == null) return false;
     final opKey = 'update_${trade.id}';
@@ -89,7 +100,6 @@ class TradeCubit extends Cubit<TradeState> {
     try {
       final tradeWithUser = trade.copyWith(userId: currentUserId);
 
-      // Actualización optimista instantánea en memoria (0-5 ms)
       final updatedList = List<Trade>.from(_currentTrades);
       final index = updatedList.indexWhere((t) => t.id == trade.id);
       if (index != -1) {
@@ -97,16 +107,14 @@ class TradeCubit extends Cubit<TradeState> {
       } else {
         updatedList.add(tradeWithUser);
       }
-      updatedList.sort((a, b) => b.entryDate.compareTo(a.entryDate));
 
-      _currentTrades = updatedList;
+      await repository.updateTrade(tradeWithUser);
+
+      _currentTrades = _deduplicate(updatedList);
       emit(TradeLoaded(
         List<Trade>.unmodifiable(_currentTrades),
         timestamp: DateTime.now(),
       ));
-
-      // Persistir asíncronamente en segundo plano
-      unawaited(repository.updateTrade(tradeWithUser));
       return true;
     } catch (e) {
       debugPrint('Error en updateTrade: $e');
@@ -129,7 +137,7 @@ class TradeCubit extends Cubit<TradeState> {
       final updatedList = List<Trade>.from(_currentTrades);
       updatedList.removeWhere((t) => t.id == id);
 
-      _currentTrades = updatedList;
+      _currentTrades = _deduplicate(updatedList);
       emit(TradeLoaded(
         List<Trade>.unmodifiable(_currentTrades),
         timestamp: DateTime.now(),

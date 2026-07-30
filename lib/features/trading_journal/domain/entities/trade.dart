@@ -1,61 +1,30 @@
 import 'package:equatable/equatable.dart';
 
-/// Resultado de una operación de trading (Trade Outcome)
+/// Enum que representa los resultados posibles de una operación de Trading (Solo WIN / LOSS / PENDING).
 enum TradeOutcome {
-  pending,
-  won,
-  lost;
+  won('WIN'),
+  lost('LOSS'),
+  pending('PENDING');
 
-  String get label {
-    switch (this) {
-      case TradeOutcome.pending:
-        return 'Pendiente';
-      case TradeOutcome.won:
-        return 'Ganado (Win)';
-      case TradeOutcome.lost:
-        return 'Perdido (Loss)';
-    }
-  }
+  final String label;
+  const TradeOutcome(this.label);
 }
 
-/// Sesión de mercado en la que se ejecutó la operación (Trading Session)
+/// Enum que representa las sesiones del mercado.
 enum TradingSession {
-  london,
-  newYork,
-  asia,
-  sydney;
+  asian('Asia', '🌏'),
+  london('Londres', '🏛️'),
+  newYork('Nueva York', '🗽');
 
-  String get label {
-    switch (this) {
-      case TradingSession.london:
-        return 'Londres';
-      case TradingSession.newYork:
-        return 'Nueva York';
-      case TradingSession.asia:
-        return 'Asia / Tokio';
-      case TradingSession.sydney:
-        return 'Sídney';
-    }
-  }
-
-  String get icon {
-    switch (this) {
-      case TradingSession.london:
-        return '🏛️';
-      case TradingSession.newYork:
-        return '🏙️';
-      case TradingSession.asia:
-        return '🌅';
-      case TradingSession.sydney:
-        return '🌊';
-    }
-  }
+  final String label;
+  final String icon;
+  const TradingSession(this.label, this.icon);
 }
 
-/// Entidad pura de Dominio que representa una operación (Trade).
+/// Entidad pura del Dominio que representa un Trade / Operación individual.
 class Trade extends Equatable {
   final int? id;
-  final String? userId;
+  final String userId;
   final String asset;
   final String strategy;
   final DateTime entryDate;
@@ -67,18 +36,17 @@ class Trade extends Equatable {
 
   const Trade({
     this.id,
-    this.userId,
+    this.userId = 'admin',
     required this.asset,
     required this.strategy,
     required this.entryDate,
     required this.riskRewardRatio,
     required this.outcome,
-    this.session = TradingSession.newYork,
+    required this.session,
     this.notes = '',
     this.imageUrl,
   });
 
-  /// Permite crear una copia modificada del Trade (útil para edición y asignación de usuario)
   Trade copyWith({
     int? id,
     String? userId,

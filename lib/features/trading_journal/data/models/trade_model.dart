@@ -5,14 +5,14 @@ import '../../domain/entities/trade.dart';
 class TradeModel extends Trade {
   const TradeModel({
     super.id,
-    super.userId,
+    super.userId = 'admin',
     required super.asset,
     required super.strategy,
     required super.entryDate,
     required super.riskRewardRatio,
     required super.outcome,
-    super.session,
-    super.notes,
+    required super.session,
+    super.notes = '',
     super.imageUrl,
   });
 
@@ -20,7 +20,7 @@ class TradeModel extends Trade {
   factory TradeModel.fromMap(Map<String, dynamic> map) {
     return TradeModel(
       id: map['id'] as int?,
-      userId: map['user_id']?.toString(),
+      userId: map['user_id']?.toString() ?? 'admin',
       asset: map['asset'] as String,
       strategy: map['strategy'] as String,
       entryDate: DateTime.parse(map['entry_date'] as String),

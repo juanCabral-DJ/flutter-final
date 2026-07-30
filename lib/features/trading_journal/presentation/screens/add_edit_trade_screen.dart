@@ -424,17 +424,17 @@ class _AddEditTradeScreenState extends State<AddEditTradeScreen> {
                 segments: const [
                   ButtonSegment(
                     value: TradeOutcome.pending,
-                    label: Text('Pendiente'),
+                    label: Text('PENDING'),
                     icon: Icon(Icons.hourglass_empty_rounded),
                   ),
                   ButtonSegment(
                     value: TradeOutcome.won,
-                    label: Text('Ganado'),
+                    label: Text('WIN'),
                     icon: Icon(Icons.check_circle_outline_rounded),
                   ),
                   ButtonSegment(
                     value: TradeOutcome.lost,
-                    label: Text('Perdido'),
+                    label: Text('LOSS'),
                     icon: Icon(Icons.highlight_off_rounded),
                   ),
                 ],
