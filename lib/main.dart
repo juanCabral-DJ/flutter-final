@@ -61,25 +61,38 @@ class TradingJournalApp extends StatelessWidget {
         navigatorKey: navigatorKey,
         debugShowCheckedModeBanner: false,
         theme: AppTheme.darkTheme,
-        routes: {
-          '/login': (context) => const LoginScreen(),
-          '/main': (context) => const AuthGuard(child: MainScreen()),
+        onGenerateRoute: (settings) {
+          if (settings.name == '/main') {
+            return MaterialPageRoute(
+              builder: (context) => const AuthGuard(child: MainScreen()),
+            );
+          }
+          if (settings.name == '/login') {
+            return MaterialPageRoute(
+              builder: (context) => const LoginScreen(),
+            );
+          }
+          return null;
         },
-        home: const RouteGuardHome(),
+        home: const RootAuthRouter(),
       ),
     );
   }
 }
 
-/// Evalúa el estado de autenticación y bloquea el acceso si no hay sesión iniciada.
-class RouteGuardHome extends StatelessWidget {
-  const RouteGuardHome({super.key});
+/// Router principal de autenticación
+class RootAuthRouter extends StatelessWidget {
+  const RootAuthRouter({super.key});
 
   @override
   Widget build(BuildContext context) {
     return BlocConsumer<AuthCubit, AuthState>(
+      listenWhen: (previous, current) => previous.runtimeType != current.runtimeType,
       listener: (context, state) {
-        if (state is Unauthenticated || state is AuthError) {
+        if (state is Authenticated) {
+          context.read<TradeCubit>().setUserId(state.user.username);
+          navigatorKey.currentState?.pushNamedAndRemoveUntil('/main', (route) => false);
+        } else if (state is Unauthenticated) {
           navigatorKey.currentState?.pushNamedAndRemoveUntil('/login', (route) => false);
         }
       },
@@ -103,7 +116,7 @@ class RouteGuardHome extends StatelessWidget {
   }
 }
 
-/// Guarda para rutas protegidas individuales
+/// Guarda de protección para la vista principal
 class AuthGuard extends StatelessWidget {
   final Widget child;
 

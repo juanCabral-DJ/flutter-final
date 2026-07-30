@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../../core/theme/app_theme.dart';
+import '../../../../main.dart';
+import '../../../trading_journal/presentation/cubit/trade_cubit.dart';
 import '../cubit/auth_cubit.dart';
 import '../cubit/auth_state.dart';
 
-/// Pantalla de Autenticación con métodos independientes para Iniciar Sesión y Registrarse.
+/// Pantalla de Autenticación con redirección automática tras inicio de sesión exitoso.
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
 
@@ -51,6 +53,11 @@ class _LoginScreenState extends State<LoginScreen> {
           padding: const EdgeInsets.all(24.0),
           child: BlocConsumer<AuthCubit, AuthState>(
             listener: (context, state) {
+              if (state is Authenticated) {
+                // Configurar usuario activo en TradeCubit y redirigir inmediatamente a MainScreen
+                context.read<TradeCubit>().setUserId(state.user.username);
+                navigatorKey.currentState?.pushNamedAndRemoveUntil('/main', (route) => false);
+              }
               if (state is AuthError) {
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
