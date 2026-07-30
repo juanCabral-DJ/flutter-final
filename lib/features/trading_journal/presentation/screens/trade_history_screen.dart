@@ -44,14 +44,23 @@ class TradeHistoryScreen extends StatelessWidget {
             onPressed: () async {
               Navigator.pop(dialogContext);
               if (trade.id != null) {
-                await context.read<TradeCubit>().deleteTrade(trade.id!);
+                final success = await context.read<TradeCubit>().deleteTrade(trade.id!);
                 if (context.mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text('Trade ${trade.asset} eliminado'),
-                      backgroundColor: AppTheme.cardColor,
-                    ),
-                  );
+                  if (success) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text('Operación de ${trade.asset} eliminada con éxito'),
+                        backgroundColor: AppTheme.winColor,
+                      ),
+                    );
+                  } else {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text('No se pudo eliminar la operación de ${trade.asset}'),
+                        backgroundColor: AppTheme.lossColor,
+                      ),
+                    );
+                  }
                 }
               }
             },
@@ -159,7 +168,7 @@ class TradeHistoryScreen extends StatelessWidget {
                   ),
                   confirmDismiss: (direction) async {
                     _confirmDelete(context, trade);
-                    return false; // El diálogo manejará la eliminación si confirma
+                    return false;
                   },
                   child: TradeCard(
                     trade: trade,
